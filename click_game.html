@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-tw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>點擊小遊戲</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .game-container {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .click-image {
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+            border: none;
+            background: none;
+            margin: 20px 0;
+        }
+        .click-image.clicked {
+            animation: bounce 1s;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+        .click-image:active {
+            transform: scale(0.95);
+        }
+        .count {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        .timer {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        .result {
+            font-size: 20px;
+            color: #007bff;
+            margin: 20px 0;
+            display: none;
+        }
+        .start-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .start-btn:disabled {
+            background-color: #ccc;
+        }
+        @media (max-width: 600px) {
+            .click-image {
+                width: 50px;
+                height: auto;
+            }
+            .game-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>黃Sir小遊戲</h1>
+        <p>10秒鐘內點擊圖片多少下？</p>
+        <input type="text" id="playerName" placeholder="輸入你的名字" maxlength="20" style="padding: 10px; margin: 10px 0; width: 100%; box-sizing: border-box;">
+        <div class="count">點擊次數: <span id="clickCount">0</span></div>
+        <div class="timer">剩餘時間: <span id="timeLeft">10</span> 秒</div>
+        <img src="huang.jpg" alt="點擊圖片" class="click-image" id="clickImage">
+        <button class="start-btn" id="startBtn">開始遊戲</button>
+        <div class="result" id="result"></div>
+        <div id="leaderboard" style="margin-top: 20px; text-align: left;">
+            <h3>積分排名</h3>
+            <ol id="leaderboardList"></ol>
+        </div>
+    </div>
+
+    <script>
+        let clickCount = 0;
+        let timeLeft = 10;
+        let timer;
+        let gameActive = false;
+
+        const clickImage = document.getElementById('clickImage');
+        const clickCountSpan = document.getElementById('clickCount');
+        const timeLeftSpan = document.getElementById('timeLeft');
+        const resultDiv = document.getElementById('result');
+        const startBtn = document.getElementById('startBtn');
+        const playerNameInput = document.getElementById('playerName');
+        const leaderboardList = document.getElementById('leaderboardList');
+
+        startBtn.addEventListener('click', startGame);
+        clickImage.addEventListener('click', handleClick);
+
+        // 初始化排名
+        displayLeaderboard();
+
+        function startGame() {
+            const playerName = playerNameInput.value.trim();
+            if (!playerName) {
+                alert('請輸入你的名字！');
+                return;
+            }
+            clickCount = 0;
+            timeLeft = 10;
+            gameActive = true;
+            clickCountSpan.textContent = clickCount;
+            timeLeftSpan.textContent = timeLeft;
+            resultDiv.style.display = 'none';
+            startBtn.disabled = true;
+            timer = setInterval(updateTimer, 1000);
+        }
+
+        function handleClick() {
+            if (gameActive) {
+                clickCount++;
+                clickCountSpan.textContent = clickCount;
+                clickImage.classList.add('clicked');
+                setTimeout(() => clickImage.classList.remove('clicked'), 1000);
+            }
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            timeLeftSpan.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timer);
+            startBtn.disabled = false;
+            const playerName = playerNameInput.value.trim();
+            resultDiv.textContent = `太神啦！${playerName}，總點擊次數: ${clickCount}`;
+            resultDiv.style.display = 'block';
+            saveScore(playerName, clickCount);
+            displayLeaderboard();
+        }
+
+        function saveScore(name, score) {
+            let leaderboard = JSON.parse(localStorage.getItem('clickGameLeaderboard')) || [];
+            leaderboard.push({ name, score });
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10); // 保留前10名
+            localStorage.setItem('clickGameLeaderboard', JSON.stringify(leaderboard));
+        }
+
+        function displayLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('clickGameLeaderboard')) || [];
+            leaderboardList.innerHTML = '';
+            leaderboard.forEach((entry, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${entry.name}: ${entry.score} 次`;
+                leaderboardList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
